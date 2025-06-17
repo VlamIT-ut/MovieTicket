@@ -19,7 +19,7 @@ import java.io.ByteArrayOutputStream
 import javax.inject.Inject
 import android.content.Context
 import java.io.InputStream
-
+import com.google.firebase.messaging.FirebaseMessaging
 @HiltViewModel
 class ProfileViewModel @Inject constructor() : ViewModel() {
     private val auth = FirebaseAuth.getInstance()
@@ -164,4 +164,15 @@ class ProfileViewModel @Inject constructor() : ViewModel() {
             }
         }
     }
-} 
+    fun saveFcmTokenForUser(userId: String) {
+        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                val token = task.result
+                val firestore = FirebaseFirestore.getInstance()
+                firestore.collection("users").document(userId)
+                    .update("fcmToken", token)
+            }
+        }
+    }
+}
+

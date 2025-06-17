@@ -31,4 +31,5 @@ class AuthViewModel @Inject constructor() : ViewModel() {
     fun getCurrentUserEmail(): String? {
         return auth.currentUser?.email
     }
-} 
+    fun getCurrentUserId(): String? = auth.currentUser?.uid
+}

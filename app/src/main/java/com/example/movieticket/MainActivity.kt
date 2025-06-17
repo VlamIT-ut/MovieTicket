@@ -16,12 +16,14 @@ import com.example.movieticket.ui.theme.MovieTicketTheme
 import com.example.movieticket.ui.viewmodel.AuthViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.movieticket.ui.viewmodel.ProfileViewModel
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
+
             MovieTicketTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -31,6 +33,17 @@ class MainActivity : ComponentActivity() {
                     val navController = rememberNavController()
                     val authViewModel: AuthViewModel = hiltViewModel()
                     val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
+                    val profileViewModel: ProfileViewModel = hiltViewModel()
+
+                    // Lấy userId từ AuthViewModel
+                    val userId = authViewModel.getCurrentUserId()
+
+                    // Gọi lưu token mỗi khi đăng nhập thành công
+                    LaunchedEffect(isLoggedIn, userId) {
+                        if (isLoggedIn && userId != null) {
+                            profileViewModel.saveFcmTokenForUser(userId)
+                        }
+                    }
 
                     if (showSplash) {
                         SplashScreen(
