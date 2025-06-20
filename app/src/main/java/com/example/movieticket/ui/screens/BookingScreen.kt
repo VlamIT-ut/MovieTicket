@@ -1,5 +1,6 @@
 package com.example.movieticket.ui.screens
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -7,7 +8,6 @@ import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -37,6 +37,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import android.util.Log
 import androidx.activity.compose.BackHandler
 
+@SuppressLint("NewApi")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookingScreen(
@@ -384,6 +385,7 @@ fun BookingScreen(
     }
 }
 
+@SuppressLint("NewApi")
 @Composable
 private fun DateCard(
     date: LocalDate,
@@ -417,6 +419,7 @@ private fun DateCard(
     }
 }
 
+@SuppressLint("NewApi")
 @Composable
 private fun TimeCard(
     time: String,

@@ -18,10 +18,41 @@ import dagger.hilt.android.AndroidEntryPoint
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.movieticket.ui.viewmodel.ProfileViewModel
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    // Thêm biến launcher xin quyền
+    private lateinit var requestPermissionLauncher: androidx.activity.result.ActivityResultLauncher<String>
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Khởi tạo launcher xin quyền
+        requestPermissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted: Boolean ->
+            if (isGranted) {
+                // Được cấp quyền, có thể gửi thông báo
+            } else {
+                // Người dùng từ chối, có thể hướng dẫn họ vào Settings
+            }
+        }
+
+        // Kiểm tra và xin quyền thông báo (Android 13+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                // Hiển thị giải thích nếu cần, sau đó xin quyền
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+
         setContent {
 
             MovieTicketTheme {

@@ -4,7 +4,7 @@
     package="com.example.movieticket">
 
     <uses-permission android:name="android.permission.INTERNET" />
-
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:name=".MovieTicketApplication"
         android:allowBackup="true"
