@@ -72,7 +72,11 @@ class MainActivity : ComponentActivity() {
                     // Gọi lưu token mỗi khi đăng nhập thành công
                     LaunchedEffect(isLoggedIn, userId) {
                         if (isLoggedIn && userId != null) {
+                            // Đăng nhập: lưu token mới cho user
                             profileViewModel.saveFcmTokenForUser(userId)
+                        } else if (!isLoggedIn && userId != null) {
+                            // Đăng xuất: làm mới (xoá) token cho user
+                            profileViewModel.refreshFcmTokenForUser(userId)
                         }
                     }
 

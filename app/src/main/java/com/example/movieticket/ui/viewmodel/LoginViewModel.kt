@@ -38,13 +38,18 @@ class LoginViewModel @Inject constructor(
             }
         }
     }
+
     fun loginWithGoogle(idToken: String) {
         viewModelScope.launch {
             try {
                 _isLoading.value = true
                 _error.value = null
                 val credential = GoogleAuthProvider.getCredential(idToken, null)
-                auth.signInWithCredential(credential).await()
+                val result = auth.signInWithCredential(credential).await()
+                val user = auth.currentUser
+                if (user != null) {
+                    saveUserToFirestore(user.uid, user.displayName, user.email, user.photoUrl?.toString())
+                }
                 _isLoggedIn.value = true
             } catch (e: Exception) {
                 _error.value = e.message ?: "Đăng nhập Google thất bại"
@@ -53,7 +58,19 @@ class LoginViewModel @Inject constructor(
             }
         }
     }
+
+    private fun saveUserToFirestore(uid: String, displayName: String?, email: String?, photoUrl: String?) {
+        val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+        val userMap = hashMapOf(
+            "uid" to uid,
+            "displayName" to (displayName ?: ""),
+            "email" to (email ?: ""),
+            "photoUrl" to (photoUrl ?: "")
+        )
+        db.collection("users").document(uid).set(userMap)
+    }
+
     fun setError(message: String) {
         _error.value = message
     }
-} 
+}

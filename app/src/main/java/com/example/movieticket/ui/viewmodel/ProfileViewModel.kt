@@ -174,5 +174,11 @@ class ProfileViewModel @Inject constructor() : ViewModel() {
             }
         }
     }
-}
 
+    // Làm mới (xoá) FCM token khi đăng xuất
+    fun refreshFcmTokenForUser(userId: String) {
+        val firestore = FirebaseFirestore.getInstance()
+        firestore.collection("users").document(userId)
+            .update("fcmToken", null)
+    }
+}
