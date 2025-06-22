@@ -2,28 +2,26 @@ package com.example.movieticket.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.movieticket.data.local.UserPrefs
+import com.example.movieticket.data.model.Movie
+import com.example.movieticket.data.model.Ticket
+import com.example.movieticket.utils.LevelUpEventBus
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import java.text.SimpleDateFormat
-import java.util.*
 import javax.inject.Inject
 import kotlin.random.Random
-import com.example.movieticket.data.model.Movie
-import com.example.movieticket.data.model.Ticket
-import com.example.movieticket.ui.viewmodel.Transaction
-import com.example.movieticket.ui.viewmodel.TransactionType
 
 data class PaymentState(
-    val orderId: String = PaymentViewModel.generateOrderId(),
-    val promoCode: String? = null,
-    val walletBalance: Long = 0,
-    val total: Long = 0,
+    val orderId: String = "",
+    val walletBalance: Long = 0L,
+    val total: Long = 0L,
     val selectedDate: String = "",
     val selectedTime: String = "",
     val isLoading: Boolean = false,
@@ -32,11 +30,13 @@ data class PaymentState(
 
 @HiltViewModel
 class PaymentViewModel @Inject constructor(
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    private val userPrefs: UserPrefs,
+    private val levelBus: LevelUpEventBus
 ) : ViewModel() {
 
-    private val _paymentState = MutableStateFlow(PaymentState())
-    val paymentState: StateFlow<PaymentState> = _paymentState.asStateFlow()
+    private val _ui = MutableStateFlow(PaymentState())
+    val paymentState: StateFlow<PaymentState> = _ui
 
     fun initialize(
         movie: Movie,
@@ -45,155 +45,108 @@ class PaymentViewModel @Inject constructor(
         selectedTime: String,
         total: Long
     ) {
-        _paymentState.value = _paymentState.value.copy(
-            selectedDate = selectedDate,
-            selectedTime = selectedTime,
-            total = total
-        )
+        _ui.update {
+            it.copy(
+                orderId = generateOrderId(),
+                selectedDate = selectedDate,
+                selectedTime = selectedTime,
+                total = total
+            )
+        }
         fetchWalletBalance()
     }
 
-    private fun fetchWalletBalance() {
-        viewModelScope.launch {
-            try {
-                val userId = FirebaseAuth.getInstance().currentUser?.uid
-                    ?: throw Exception("User not logged in")
-
-                val walletDoc = firestore.collection("wallets")
-                    .document(userId)
-                    .get()
-                    .await()
-
-                val balance = walletDoc.getLong("balance") ?: 0
-                _paymentState.value = _paymentState.value.copy(
-                    walletBalance = balance
-                )
-            } catch (e: Exception) {
-                _paymentState.value = _paymentState.value.copy(
-                    error = e.message
-                )
-            }
+    private fun fetchWalletBalance() = viewModelScope.launch {
+        try {
+            val uid = uid() ?: return@launch
+            val balance = firestore.collection("wallets").document(uid)
+                .get().await().getLong("balance") ?: 0L
+            _ui.update { it.copy(walletBalance = balance) }
+        } catch (e: Exception) {
+            _ui.update { it.copy(error = e.message) }
         }
     }
 
-    fun applyPromoCode(code: String) {
-        // Implement promo code logic here
-        _paymentState.value = _paymentState.value.copy(
-            promoCode = code
-        )
-    }
-
-    fun processPayment(
+    suspend fun processPayment(
         movie: Movie,
         selectedSeats: List<String>,
-        onSuccess: () -> Unit
-    ) {
-        viewModelScope.launch {
-            try {
-                _paymentState.value = _paymentState.value.copy(isLoading = true)
+        earnedPoint: Int
+    ): Boolean = try {
+        _ui.update { it.copy(isLoading = true, error = null) }
 
-                val userId = FirebaseAuth.getInstance().currentUser?.uid 
-                    ?: throw Exception("User not logged in")
+        val uid = uid() ?: throw Exception("Bạn chưa đăng nhập")
 
-                // Kiểm tra số dư ví
-                val currentBalance = _paymentState.value.walletBalance
-                val totalAmount = _paymentState.value.total
-                if (currentBalance < totalAmount) {
-                    _paymentState.value = _paymentState.value.copy(
-                        error = "Số dư ví không đủ để thanh toán. Vui lòng nạp thêm tiền!",
-                        isLoading = false
-                    )
-                    return@launch
-                }
+        val balance = _ui.value.walletBalance
+        val total = _ui.value.total
+        if (balance < total) throw Exception("Số dư ví không đủ, hãy nạp thêm")
 
-                // Kiểm tra ghế
-                val seatsAvailable = MyTicketViewModel.checkSeatsAvailability(
-                    movie.id,
-                    _paymentState.value.selectedDate,
-                    _paymentState.value.selectedTime,
-                    selectedSeats
-                )
+        if (!MyTicketViewModel.checkSeatsAvailability(
+                movie.id, _ui.value.selectedDate, _ui.value.selectedTime, selectedSeats
+            )
+        ) throw Exception("Ghế đã được đặt, hãy chọn ghế khác")
 
-                if (!seatsAvailable) {
-                    _paymentState.value = _paymentState.value.copy(
-                        error = "Ghế đã được đặt, vui lòng chọn ghế khác",
-                        isLoading = false
-                    )
-                    return@launch
-                }
+        val newBalance = balance - total
+        val ticketRef = firestore.collection("tickets").document()
+        val ticket = Ticket(
+            id = ticketRef.id,
+            movieId = movie.id,
+            movieTitle = movie.title,
+            moviePoster = movie.posterPath,
+            userId = uid,
+            seats = selectedSeats,
+            date = _ui.value.selectedDate,
+            time = _ui.value.selectedTime,
+            totalAmount = total.toInt(),
+            timestamp = System.currentTimeMillis(),
+            status = "active"
+        )
 
-                // Tạo ticket
-                val ticket = Ticket(
-                    movieId = movie.id,
-                    movieTitle = movie.title,
-                    moviePoster = movie.posterPath,
-                    userId = userId,
-                    seats = selectedSeats,
-                    date = _paymentState.value.selectedDate,
-                    time = _paymentState.value.selectedTime,
-                    totalAmount = _paymentState.value.total.toInt(),
-                    timestamp = System.currentTimeMillis(),
-                    status = "active"
-                )
+        firestore.runBatch { batch ->
+            batch.set(ticketRef, ticket)
 
-                // Lưu ticket
-                val ticketSaved = MyTicketViewModel.saveTicket(ticket)
-                if (!ticketSaved) {
-                    _paymentState.value = _paymentState.value.copy(
-                        error = "Không thể đặt vé, vui lòng thử lại",
-                        isLoading = false
-                    )
-                    return@launch
-                }
+            val walletRef = firestore.collection("wallets").document(uid)
+            batch.update(walletRef, "balance", newBalance)
 
-                // Trừ tiền trong ví
-                val newBalance = currentBalance - totalAmount
-
-                // Tạo transaction mới
-                val transaction = Transaction(
-                    amount = _paymentState.value.total,
+            val transRef = walletRef.collection("transactions").document()
+            batch.set(
+                transRef, Transaction(
+                    id = transRef.id,
+                    amount = total,
                     type = TransactionType.DEBIT.name,
                     description = "Thanh toán vé xem phim",
                     timestamp = System.currentTimeMillis(),
                     balanceAfter = newBalance
                 )
+            )
+        }.await()
 
-                // Thực hiện transaction trong Firestore với batch
-                firestore.runBatch { batch ->
-                    // Cập nhật số dư ví
-                    val walletRef = firestore.collection("wallets")
-                        .document(userId)
-                    batch.update(walletRef, "balance", newBalance)
-
-                    // Thêm transaction mới
-                    val transactionRef = firestore.collection("wallets")
-                        .document(userId)
-                        .collection("transactions")
-                        .document()
-                    batch.set(transactionRef, transaction.copy(id = transactionRef.id))
-                }.await()
-
-                // Cập nhật state và gọi callback thành công
-                _paymentState.value = _paymentState.value.copy(
-                    isLoading = false,
-                    error = null
-                )
-                
-                onSuccess()
-            } catch (e: Exception) {
-                _paymentState.value = _paymentState.value.copy(
-                    isLoading = false,
-                    error = e.message
-                )
-            }
+        // Cộng điểm và cập nhật level
+        val newPoint = userPrefs.point + earnedPoint
+        val newLevel = when {
+            newPoint >= 1000 -> "VIP"
+            newPoint >= 500 -> "Gold"
+            else -> "Silver"
         }
+        val levelChanged = newLevel != userPrefs.memberLevel
+        userPrefs.point = newPoint
+        userPrefs.memberLevel = newLevel
+
+        firestore.collection("users").document(uid)
+            .set(mapOf("point" to newPoint, "memberLevel" to newLevel), SetOptions.merge())
+            .await()
+
+        if (levelChanged) levelBus.emitLevelUp(newLevel)
+
+        _ui.update { it.copy(walletBalance = newBalance, isLoading = false) }
+        true
+    } catch (e: Exception) {
+        _ui.update { it.copy(isLoading = false, error = e.message) }
+        false
     }
+
+    private fun uid() = FirebaseAuth.getInstance().currentUser?.uid
 
     companion object {
-        fun generateOrderId(): String {
-            val timestamp = System.currentTimeMillis()
-            val random = Random.nextInt(1000, 9999)
-            return "$timestamp$random"
-        }
+        fun generateOrderId(): String = "${System.currentTimeMillis()}${Random.nextInt(1000, 9999)}"
     }
-} 
+}
