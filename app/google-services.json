@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "190039667885",
+    "firebase_url": "https://movie-ticket-test1-default-rtdb.asia-southeast1.firebasedatabase.app",
     "project_id": "movie-ticket-test1",
     "storage_bucket": "movie-ticket-test1.firebasestorage.app"
   },
@@ -13,6 +14,14 @@
         }
       },
       "oauth_client": [
+        {
+          "client_id": "190039667885-f3275vhp1akb40d6du610no8i7908398.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.movieticket",
+            "certificate_hash": "3965e4a1ee198ecbf2b4ecafb925e636156b94d7"
+          }
+        },
         {
           "client_id": "190039667885-90tc5uon59tjrtoj2qrchu40khnt9c2d.apps.googleusercontent.com",
           "client_type": 3

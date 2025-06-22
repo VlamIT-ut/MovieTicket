@@ -3,6 +3,7 @@ package com.example.movieticket.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -36,5 +37,23 @@ class LoginViewModel @Inject constructor(
                 _isLoading.value = false
             }
         }
+    }
+    fun loginWithGoogle(idToken: String) {
+        viewModelScope.launch {
+            try {
+                _isLoading.value = true
+                _error.value = null
+                val credential = GoogleAuthProvider.getCredential(idToken, null)
+                auth.signInWithCredential(credential).await()
+                _isLoggedIn.value = true
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Đăng nhập Google thất bại"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+    fun setError(message: String) {
+        _error.value = message
     }
 } 
