@@ -1,0 +1,11 @@
+[33m957aaf3[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m)[m HEAD@{0}: Branch: renamed refs/heads/master to refs/heads/master
+[33m957aaf3[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m)[m HEAD@{2}: pull --rebase origin master (finish): returning to refs/heads/master
+[33m957aaf3[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m)[m HEAD@{3}: pull --rebase origin master (start): checkout 957aaf342557e21addf00c6c5a6d004da66ee814
+[33m1b67c0a[m HEAD@{4}: reset: moving to 1b67c0a
+[33m957aaf3[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m)[m HEAD@{5}: pull --rebase origin master (finish): returning to refs/heads/master
+[33m957aaf3[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m)[m HEAD@{6}: pull --rebase origin master (pick): update
+[33m9ea6a44[m HEAD@{7}: pull --rebase origin master (start): checkout 9ea6a440b5107ec1e8717a76260c9987807a3fa6
+[33m1b67c0a[m HEAD@{8}: Branch: renamed refs/heads/main to refs/heads/master
+[33m1b67c0a[m HEAD@{10}: Branch: renamed refs/heads/master to refs/heads/main
+[33m1b67c0a[m HEAD@{12}: commit: update
+[33m88589c1[m[33m ([m[1;31mgithub/master[m[33m)[m HEAD@{13}: clone: from https://github.com/VlamIT-ut/MovieTicket.git
