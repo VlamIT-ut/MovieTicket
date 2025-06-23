@@ -1,6 +1,7 @@
 package com.example.movieticket.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -18,7 +19,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.movieticket.data.model.Movie
 import com.example.movieticket.ui.viewmodel.PaymentViewModel
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,9 +33,6 @@ fun PaymentScreen(
     viewModel: PaymentViewModel = hiltViewModel()
 ) {
     val state by viewModel.paymentState.collectAsState()
-    val scope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
-    val earnedPoint = remember(total) { total / 1_000 }
 
     LaunchedEffect(Unit) {
         viewModel.initialize(movie, selectedSeats, selectedDate, selectedTime, total.toLong())
@@ -51,8 +48,7 @@ fun PaymentScreen(
                     }
                 }
             )
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -68,6 +64,7 @@ fun PaymentScreen(
                     .fillMaxWidth(),
                 horizontalArrangement = Arrangement.Start
             ) {
+                // Movie Poster
                 AsyncImage(
                     model = "https://image.tmdb.org/t/p/w500${movie.posterPath}",
                     contentDescription = movie.title,
@@ -79,6 +76,7 @@ fun PaymentScreen(
 
                 Spacer(modifier = Modifier.width(16.dp))
 
+                // Movie Details
                 Column {
                     Text(
                         text = movie.title,
@@ -106,6 +104,7 @@ fun PaymentScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Order Details
             Column(
                 modifier = Modifier
                     .padding(horizontal = 16.dp)
@@ -119,6 +118,7 @@ fun PaymentScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // Wallet Info
             Card(
                 modifier = Modifier
                     .padding(horizontal = 16.dp)
@@ -160,19 +160,11 @@ fun PaymentScreen(
 
             Button(
                 onClick = {
-                    scope.launch {
-                        val ok = viewModel.processPayment(
-                            movie = movie,
-                            selectedSeats = selectedSeats,
-                            earnedPoint = earnedPoint
-                        )
-                        if (ok) {
-                            snackbarHostState.showSnackbar("Thanh toán thành công! +$earnedPoint điểm")
-                            onPaymentSuccess()
-                        } else {
-                            snackbarHostState.showSnackbar("Thanh toán thất bại: ${state.error}")
-                        }
-                    }
+                    viewModel.processPayment(
+                        movie = movie,
+                        selectedSeats = selectedSeats,
+                        onSuccess = onPaymentSuccess
+                    )
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -214,3 +206,4 @@ private fun formatPrice(price: Int): String {
     return String.format("%,d", price)
         .replace(",", ".")
 }
+
