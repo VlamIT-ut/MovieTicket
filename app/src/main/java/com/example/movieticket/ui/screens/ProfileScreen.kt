@@ -48,20 +48,6 @@ fun ProfileScreen(
     val user  = auth.currentUser
     val ctx   = LocalContext.current
 
-    /* -------- Điểm & Hạng -------- */
-    var points by remember { mutableIntStateOf(userPrefs.point) }
-    var level  by remember { mutableStateOf(userPrefs.memberLevel) }
-    var showLevelDialog by remember { mutableStateOf<String?>(null) }
-
-    /* Lắng nghe sự kiện lên hạng */
-    LaunchedEffect(Unit) {
-        levelBus.levelUpFlow.collect { newLevel ->
-            level  = newLevel
-            points = userPrefs.point
-            showLevelDialog = newLevel
-        }
-    }
-
     /* -------- State cũ -------- */
     var showEditNameDialog by remember { mutableStateOf(false) }
     var showChangePasswordDialog by remember { mutableStateOf(false) }
@@ -69,6 +55,11 @@ fun ProfileScreen(
     var newPassword by remember { mutableStateOf("") }
     var profileImage by remember { mutableStateOf<String?>(null) }
     var firestoreDisplayName by remember { mutableStateOf<String?>(null) }
+
+    /* -------- Điểm & Hạng -------- */
+    var points by remember { mutableIntStateOf(userPrefs.point) }
+    var level  by remember { mutableStateOf(userPrefs.memberLevel) }
+    var showLevelDialog by remember { mutableStateOf<String?>(null) }
 
     val isLoading by viewModel.isLoading.collectAsState()
     val error     by viewModel.error.collectAsState()
@@ -80,6 +71,15 @@ fun ProfileScreen(
                 profileImage         = data["profileImage"] as? String
                 firestoreDisplayName = data["displayName"] as? String
             }
+        }
+    }
+
+    /* Lắng nghe sự kiện lên hạng */
+    LaunchedEffect(Unit) {
+        levelBus.levelUpFlow.collect { newLevel ->
+            level  = newLevel
+            points = userPrefs.point
+            showLevelDialog = newLevel
         }
     }
 

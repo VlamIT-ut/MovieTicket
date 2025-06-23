@@ -72,18 +72,6 @@ class MainActivity : ComponentActivity() {
                 val authVM : AuthViewModel = hiltViewModel()
                 val isLoggedIn by authVM.isLoggedIn.collectAsState()
 
-                /* Banner state */
-                var points by remember { mutableIntStateOf(userPrefs.point) }
-                var level  by remember { mutableStateOf(userPrefs.memberLevel) }
-
-                /* Listen level-up events */
-                LaunchedEffect(Unit) {
-                    levelBus.levelUpFlow.collect { newLvl ->
-                        level  = newLvl
-                        points = userPrefs.point
-                    }
-                }
-
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -111,14 +99,12 @@ class MainActivity : ComponentActivity() {
                         showSplash -> SplashScreen { showSplash = false }
 
                         isLoggedIn -> Scaffold(
-                            topBar = { MemberBanner(points, level) }
+                            topBar = { }
                         ) { innerPadding ->
                             Box(Modifier.padding(innerPadding)) {
-                                /* 🔑 Truyền đủ 3 tham số */
                                 MainScreen(
-                                    navController = navController,
-                                    userPrefs     = userPrefs,
-                                    levelBus      = levelBus
+                                    userPrefs = userPrefs,
+                                    levelBus = levelBus
                                 )
                             }
                         }
@@ -128,25 +114,5 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-}
-
-/* ---------- Banner Điểm & Hạng ---------- */
-@Composable
-fun MemberBanner(points: Int, level: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text("Điểm: $points", style = MaterialTheme.typography.bodyLarge)
-
-        val lvlText = when (level) {
-            "VIP"  -> "🥇 VIP"
-            "Gold" -> "⭐ Gold"
-            else   -> "🥈 Silver"
-        }
-        Text("Hạng: $lvlText", style = MaterialTheme.typography.bodyLarge)
     }
 }
